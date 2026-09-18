@@ -233,23 +233,69 @@ const googleLogin = async (payload: IGooleLoginPayload) => {
 
   let user = ifPatientExistWithGoogleAuth;
 
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        name: googleIdTokenPayload.name,
+  if (!ifPatientExistWithGoogleAuth) {
+    const ifPatientExistWithCredentials = await prisma.user.findUnique({
+      where: {
         email: googleIdTokenPayload.email,
         role: Role.PATIENT,
-        googleId: googleIdTokenPayload.sub,
-        authProvider: AUTHPROVIDER.GOOGLE,
-        patient: {
-          create: {
-            name: googleIdTokenPayload.name,
-            email: googleIdTokenPayload.email,
-          },
-        },
+        authProvider: AUTHPROVIDER.CREDENTIAL,
       },
     });
+
+    if (ifPatientExistWithCredentials) {
+      if (ifPatientExistWithCredentials.emailVerified) {
+        throw new Error("Email is Not Verified");
+      }
+      if (ifPatientExistWithCredentials.status === UserStatus.BLOCKED) {
+        throw new Error("User Is Blocked");
+      }
+
+      if (
+        ifPatientExistWithCredentials.isDeleted ||
+        ifPatientExistWithCredentials.status === UserStatus.DELETED
+      ) {
+        throw new Error("User Is Deleted");
+      }
+
+      user = await prisma.user.update({
+        where: {
+          id: ifPatientExistWithCredentials.id,
+        },
+        data: {
+          googleId: googleIdTokenPayload.sub,
+        },
+      });
+    } else {
+      // Google Register
+      user = await prisma.user.create({
+        data: {
+          name: googleIdTokenPayload.name,
+          email: googleIdTokenPayload.email,
+          role: Role.PATIENT,
+          googleId: googleIdTokenPayload.sub,
+          authProvider: AUTHPROVIDER.GOOGLE,
+          emailVerified: true,
+          patient: {
+            create: {
+              name: googleIdTokenPayload.name,
+              email: googleIdTokenPayload.email,
+            },
+          },
+        },
+      });
+    }
   }
+  if (!user) {
+    throw new Error("User Not Found");
+  }
+  if (user.status === UserStatus.BLOCKED) {
+    throw new Error("User Is Blocked");
+  }
+
+  if (user.isDeleted || user.status === UserStatus.DELETED) {
+    throw new Error("User Is Deleted");
+  }
+
   const jwtPayload = {
     userId: user.id,
     name: user.name,
