@@ -4,20 +4,21 @@ import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import type { IRequestUser } from "./auth.interface";
 import { AuthService } from "./auth.service";
-import { Uservalidation } from "./auth.validation";
 
 const registerPatient = catchAsync(async (req: Request, res: Response) => {
-  const payload = Uservalidation.PatientRegistrationZodSchema.safeParse(
-    req.body,
-  );
-  console.log("payload", payload);
-  if (!payload.success) {
-    console.log(payload.error);
-    console.log(payload.error.issues);
+  // const payload = Uservalidation.PatientRegistrationZodSchema.safeParse(
+  //   req.body,
+  // );
+  // console.log("payload", payload);
+  // if (!payload.success) {
+  //   console.log(payload.error);
+  //   console.log(payload.error.issues);
 
-    throw new Error(payload.error.issues[0].message);
-  }
-  const result = await AuthService.registerPatient(payload.data as any);
+  //   throw new Error(payload.error.issues[0].message);
+
+  // }
+  const payload = req.body;
+  const result = await AuthService.registerPatient(payload);
 
   const { accessToken, refreshToken, user, patient } = result;
 
