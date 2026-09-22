@@ -7,8 +7,8 @@ import express, {
   type Response,
 } from "express";
 import httpStatus from "http-status";
-import { z } from "zod";
 import config from "./app/config";
+import { redisClient } from "./app/lib/redis";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { notFound } from "./app/middleware/notFound";
 import { AuthRoutes } from "./app/module/auth/auth.route";
@@ -30,31 +30,52 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
-app.post("/zod", (req: Request, res: Response, next: NextFunction) => {
+
+// app.post("/zod", (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const UserZodSchema = z.object({
+//       name: z.string().min(10),
+//       email: z.email(),
+//       age: z.number().optional(),
+//       isVerified: z.boolean().optional(),
+//       books: z.array(z.string()).optional(),
+//     });
+
+//     const payload = req.body;
+
+//     const result = UserZodSchema.parse(payload);
+//     console.log("result", result);
+
+//     res.status(httpStatus.OK).json({
+//       success: true,
+//       message: "Welcome to PH Healthcare System Backend",
+//       data: result,
+//     });
+//   } catch (error) {
+//     console.log("error", error);
+//     next(error);
+//   }
+// });
+
+app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const UserZodSchema = z.object({
-      name: z.string().min(10),
-      email: z.email(),
-      age: z.number().optional(),
-      isVerified: z.boolean().optional(),
-      books: z.array(z.string()).optional(),
+    await redisClient.set("forgot-password-otp:patient1@gmail.com", "123456", {
+      expiration: {
+        type: "EX",
+        value: 60,
+      },
     });
-
-    const payload = req.body;
-
-    const result = UserZodSchema.parse(payload);
-    console.log("result", result);
-
     res.status(httpStatus.OK).json({
       success: true,
       message: "Welcome to PH Healthcare System Backend",
-      data: result,
+      data: null,
     });
   } catch (error) {
     console.log("error", error);
     next(error);
   }
 });
+
 // Basic route
 app.get("/", async (req: Request, res: Response) => {
   res.status(httpStatus.OK).json({
