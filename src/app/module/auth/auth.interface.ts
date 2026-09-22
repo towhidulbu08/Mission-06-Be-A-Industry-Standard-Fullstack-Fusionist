@@ -24,3 +24,13 @@ export interface IRequestUser {
 export interface IGooleLoginPayload {
   idToken: string;
 }
+
+export interface IForgotPasswordPayload {
+  email: string;
+}
+
+export interface IResetPasswordPayload {
+  email: string;
+  newPassword: string;
+  otp: string;
+}
