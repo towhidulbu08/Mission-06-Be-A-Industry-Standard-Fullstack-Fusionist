@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import ejs from "ejs";
 import type { TokenPayload } from "google-auth-library";
 import type { JwtPayload, SignOptions } from "jsonwebtoken";
+import path from "path";
 import {
   AUTHPROVIDER,
   Role,
@@ -9,6 +11,7 @@ import {
 } from "../../../generated/prisma/enums";
 import config from "../../config";
 import { googleClient } from "../../lib/googleAuth";
+import { transporter } from "../../lib/nodeMailer";
 import { prisma } from "../../lib/prisma";
 import { redisClient } from "../../lib/redis";
 import { jwtUtils } from "../../utils/jwt";
@@ -335,43 +338,66 @@ const googleLogin = async (payload: IGooleLoginPayload) => {
 };
 
 const forgotPassword = async (payload: IForgotPasswordPayload) => {
-  const { email } = payload;
+  try {
+    const { email } = payload;
 
-  const user = await prisma.user.findUnique({
-    where: {
-      email,
-    },
-  });
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
 
-  if (!user) {
-    throw new Error("User Does Not Exist");
+    if (!user) {
+      throw new Error("User Does Not Exist");
+    }
+
+    if (user.status === "BLOCKED") {
+      throw new Error("User Is Blocked");
+    }
+    if (!user.emailVerified) {
+      throw new Error("User Not Verified");
+    }
+
+    if (user.isDeleted || user.status === "DELETED") {
+      throw new Error("User Is Deleted");
+    }
+
+    if (user.googleId && user.authProvider === "GOOGLE") {
+      throw new Error("User Has Account With Google");
+    }
+
+    const otp = crypto.randomInt(100000, 1000000).toString();
+
+    const key = `forgot-password-otp:${user.email}`;
+
+    await redisClient.set(key, otp, {
+      expiration: {
+        type: "EX",
+        value: 5 * 60,
+      },
+    });
+    // console.log("user email", user.email);
+
+    const templatePath = path.join(
+      process.cwd(),
+      "src/app/templates/forgot.password.ejs",
+    );
+
+    const html = await ejs.renderFile(templatePath, {
+      OTP: otp,
+    });
+
+    await transporter.sendMail({
+      from: config.email_sender,
+      to: user.email,
+      subject: "Forgot Password",
+      // text: `Your OTP is ${otp}`,
+      // html: `<h1>Your OTP is ${otp}</h1>`,
+      html,
+    });
+  } catch (error) {
+    console.error("Email sending failed:", error);
   }
-
-  if (user.status === "BLOCKED") {
-    throw new Error("User Is Blocked");
-  }
-  if (!user.emailVerified) {
-    throw new Error("User Not Verified");
-  }
-
-  if (user.isDeleted || user.status === "DELETED") {
-    throw new Error("User Is Deleted");
-  }
-
-  if (user.googleId && user.authProvider === "GOOGLE") {
-    throw new Error("User Has Account With Google");
-  }
-
-  const otp = crypto.randomInt(100000, 1000000).toString();
-
-  const key = `forgot-password-otp:${user.email}`;
-
-  await redisClient.set(key, otp, {
-    expiration: {
-      type: "EX",
-      value: 5 * 60,
-    },
-  });
 };
 
 const resetPassword = async (payload: IResetPasswordPayload) => {
@@ -430,6 +456,23 @@ const resetPassword = async (payload: IResetPasswordPayload) => {
   });
 
   await redisClient.del([key]);
+
+  // const templatePath = path.join(
+  //   process.cwd(),
+  //   "src/app/templates/forgot.password.ejs",
+  // );
+
+  // const html=await ejs.renderFile(templatePath, {
+  //   OTP: otp,
+  // });
+
+  await transporter.sendMail({
+    from: config.email_sender,
+    to: user.email,
+    subject: "Password Changed",
+    // text: `Your OTP is ${otp}`,
+    html: `<h1>Password Changed</h1>`,
+  });
 };
 
 export const AuthService = {
