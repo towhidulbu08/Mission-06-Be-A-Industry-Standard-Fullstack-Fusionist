@@ -383,9 +383,13 @@ const forgotPassword = async (payload: IForgotPasswordPayload) => {
       "src/app/templates/forgot.password.ejs",
     );
 
-    const html = await ejs.renderFile(templatePath, {
-      OTP: otp,
-    });
+    const templateData = {
+      otp,
+      name: user.name,
+      expirationMinutes: 5,
+    };
+
+    const html = await ejs.renderFile(templatePath, templateData);
 
     await transporter.sendMail({
       from: config.email_sender,
@@ -457,21 +461,24 @@ const resetPassword = async (payload: IResetPasswordPayload) => {
 
   await redisClient.del([key]);
 
-  // const templatePath = path.join(
-  //   process.cwd(),
-  //   "src/app/templates/forgot.password.ejs",
-  // );
+  const templatePath = path.join(
+    process.cwd(),
+    "src/app/templates/reset.password.success.ejs",
+  );
 
-  // const html=await ejs.renderFile(templatePath, {
-  //   OTP: otp,
-  // });
+  const templateData = {
+    name: user.name,
+  };
+
+  const html = await ejs.renderFile(templatePath, templateData);
 
   await transporter.sendMail({
     from: config.email_sender,
     to: user.email,
     subject: "Password Changed",
     // text: `Your OTP is ${otp}`,
-    html: `<h1>Password Changed</h1>`,
+    //html: `<h1>Password Changed</h1>`,
+    html,
   });
 };
 
