@@ -22,6 +22,7 @@ import type {
   IRegisterPatientPayload,
   IRequestUser,
   IResetPasswordPayload,
+  IVerifyEmailPayload,
 } from "./auth.interface";
 
 const registerPatient = async (payload: IRegisterPatientPayload) => {
@@ -93,21 +94,65 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
     // html: `<h1>Your OTP is ${otp}</h1>`,
     html,
   });
+};
+const verifyPatientEmail = async (payload: IVerifyEmailPayload) => {
+  const { otp } = payload;
+  const email = payload.email.trim().toLowerCase();
 
-  /*
+  const isUserExists = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (isUserExists?.status === "BLOCKED") {
+    throw new Error("User Is Blocked");
+  }
+
+  if (isUserExists?.isDeleted || isUserExists?.status === "DELETED") {
+    throw new Error("User Is Deleted");
+  }
+
+  if (isUserExists?.emailVerified) {
+    throw new Error("Email Already Verified");
+  }
+
+  const otpKey = `patient-registration-otp:${email}`;
+
+  const redisOtp = await redisClient.get(otpKey);
+  // console.log("redisOtp", redisOtp);
+
+  if (!redisOtp) {
+    throw new Error("Invalid OTP");
+  }
+
+  if (redisOtp !== otp) {
+    throw new Error("OTP Does Not Match");
+  }
+
+  await redisClient.del(otpKey);
+
+  const patientRegistrationKey = `patient-registration-data:${email}`;
+
+  const redisPatientData = await redisClient.get(patientRegistrationKey);
+
+  if (!redisPatientData) {
+    throw new Error("Patient Data Not Found");
+  }
+
+  const patientPayload: IRegisterPatientPayload = JSON.parse(redisPatientData);
+
   const createdUser = await prisma.user.create({
     data: {
-      name,
+      name: patientPayload.name,
       email,
-      password: hashedPassword,
+      password: patientPayload.password,
       role: Role.PATIENT,
       status: UserStatus.ACTIVE,
-      emailVerified: false,
+      emailVerified: true,
       patient: {
         create: {
-          name,
+          name: patientPayload.name,
           email,
-          contactNumber: patientData?.contactNumber || "",
+          contactNumber: patientPayload?.patient?.contactNumber || "",
         },
       },
     },
@@ -135,15 +180,12 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
     config.jwt_refresh_expires_in as SignOptions,
   );
 
-
   return {
     user,
     patient,
     accessToken,
     refreshToken,
   };
-
-  */
 };
 
 const loginUser = async (payload: ILoginUserPayload) => {
@@ -550,4 +592,5 @@ export const AuthService = {
   googleLogin,
   forgotPassword,
   resetPassword,
+  verifyPatientEmail,
 };
