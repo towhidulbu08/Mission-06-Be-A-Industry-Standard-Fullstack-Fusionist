@@ -11,12 +11,15 @@ const uploadProfileImage = catchAsync(async (req: Request, res: Response) => {
     throw new Error("No File Found");
   }
   const userId = req.user?.userId as string;
-  await UserServices.uploadProfileImage(req.file?.buffer, userId);
+  const result = await UserServices.uploadProfileImage(
+    req.file?.buffer,
+    userId,
+  );
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
     message: "Email Verified Successfully",
-    data: null,
+    data: result,
   });
 });
 export const UserController = {
