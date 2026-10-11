@@ -3,6 +3,15 @@ import { cloudinary } from "../../lib/cloudinary";
 import { prisma } from "../../lib/prisma";
 
 const uploadProfileImage = async (buffer: Buffer, userId: string) => {
+  const currentUser = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    select: {
+      imagePublicId: true,
+      imageUrl: true,
+    },
+  });
   //1.Wrap the stream upload in a Promise
   const uploadResult = await new Promise<UploadApiResponse>((res, rej) => {
     cloudinary.uploader
@@ -39,7 +48,11 @@ const uploadProfileImage = async (buffer: Buffer, userId: string) => {
       password: true,
     },
   });
-  console.log("updatedUser", updatedUser);
+  // console.log("updatedUser", updatedUser);
+
+  if (currentUser?.imagePublicId && currentUser.imageUrl) {
+    await cloudinary.uploader.destroy(currentUser.imagePublicId);
+  }
 
   return updatedUser;
 };

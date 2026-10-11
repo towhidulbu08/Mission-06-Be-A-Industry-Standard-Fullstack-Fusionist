@@ -18,7 +18,7 @@ const uploadProfileImage = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
-    message: "Email Verified Successfully",
+    message: "Image Upload Successfully",
     data: result,
   });
 });
