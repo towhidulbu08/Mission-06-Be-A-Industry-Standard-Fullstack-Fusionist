@@ -63,7 +63,7 @@ app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const grantIdTokenResult = await getBkashIdToken();
 
-    console.log("grandIdtokenResult", grantIdTokenResult);
+    console.log(grantIdTokenResult);
 
     res.status(httpStatus.OK).json({
       success: true,
