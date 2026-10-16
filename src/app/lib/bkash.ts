@@ -11,14 +11,14 @@ export const getBkashIdToken = async () => {
     const bkashIdTokenTTL = await redisClient.ttl(IdTokenKey);
     const bkashRefreshTokenTTL = await redisClient.ttl(RefreshTokenKey);
 
-    console.log({
-      bkashIdToken,
-      bkashIdTokenTTL,
-      bkashRefreshToken,
-      bkashRefreshTokenTTL,
-    });
+    // console.log({
+    //   bkashIdToken,
+    //   bkashIdTokenTTL,
+    //   bkashRefreshToken,
+    //   bkashRefreshTokenTTL,
+    // });
 
-    //bkash id token expiration remaining time is less than equal  10 miniutes or bkash is expired
+    //bkash id token expiration remaining time is less than equal  10 miniutes or bkash id token is expired
     //bkash refresh token must exist
     // bkash refresh token expiration remaining time is more than 10 minutes
     if (
