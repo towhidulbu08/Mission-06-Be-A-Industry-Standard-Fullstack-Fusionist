@@ -1,6 +1,5 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import crypto from "crypto";
 import express, {
   NextFunction,
   type Application,
@@ -9,6 +8,7 @@ import express, {
 } from "express";
 import httpStatus from "http-status";
 import config from "./app/config";
+import { getBkashIdToken } from "./app/lib/bkash";
 import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { notFound } from "./app/middleware/notFound";
 import { AuthRoutes } from "./app/module/auth/auth.route";
@@ -61,18 +61,14 @@ app.use("/api/v1/user", UserRoutes);
 
 app.get("/test", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // await redisClient.set("forgot-password-otp:patient1@gmail.com", "123456", {
-    //   expiration: {
-    //     type: "EX",
-    //     value: 60,
-    //   },
-    // });
+    const grantIdTokenResult = await getBkashIdToken();
 
-    const otp = crypto.randomInt(100000, 10000000);
+    console.log("grandIdtokenResult", grantIdTokenResult);
+
     res.status(httpStatus.OK).json({
       success: true,
       message: "Welcome to PH Healthcare System Backend",
-      data: otp,
+      data: null,
     });
   } catch (error) {
     console.log("error", error);
