@@ -29,7 +29,7 @@ const bookAppointment = async () => {
         amount: "1200",
         currency: "BDT",
         intent: "sale",
-        merchantInvoiceNumber: "Inv4", // apppointment id
+        merchantInvoiceNumber: "Inv3", // apppointment id
       }),
     },
   );
@@ -78,31 +78,30 @@ const bookAppointmentCallback = async (query: Record<string, any>) => {
   );
 
   const executedPaymentResult = await executedPaymentResponse.json();
-  return executedPaymentResult;
 
-  // if (status === "success") {
-  //   return {
-  //     executedPaymentResult,
-  //     redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=success`,
-  //   };
-  // }
-  // if (status === "failure") {
-  //   return {
-  //     executedPaymentResult,
-  //     redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=failure`,
-  //   };
-  // }
-  // if (status === "cancel") {
-  //   return {
-  //     executedPaymentResult,
-  //     redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=cancel`,
-  //   };
-  // }
+  if (status === "success") {
+    return {
+      executedPaymentResult,
+      redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=success`,
+    };
+  }
+  if (status === "failure") {
+    return {
+      executedPaymentResult,
+      redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=failure`,
+    };
+  }
+  if (status === "cancel") {
+    return {
+      executedPaymentResult,
+      redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=cancel`,
+    };
+  }
 
-  // return {
-  //   executedPaymentResult,
-  //   redirectUrl: `${config.frontend_url}/dashboard/my-appointments`,
-  // };
+  return {
+    executedPaymentResult,
+    redirectUrl: `${config.frontend_url}/dashboard/my-appointments`,
+  };
 };
 
 export const AppointmentServices = {
