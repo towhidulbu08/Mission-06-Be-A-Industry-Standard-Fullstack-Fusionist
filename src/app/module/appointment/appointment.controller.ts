@@ -20,10 +20,9 @@ const bookAppointment = catchAsync(
 const bookAppointmentCallback = catchAsync(
   async (req: Request, res: Response) => {
     console.log(req.query, "req.query");
-    const { executedPaymentResult, redirectUrl } =
-      await AppointmentServices.bookAppointmentCallback(req.query);
-
-    console.log(executedPaymentResult, "executedPaymentResult");
+    const { redirectUrl } = await AppointmentServices.bookAppointmentCallback(
+      req.query,
+    );
 
     res.redirect(redirectUrl);
     // sendResponse(res, {
