@@ -86,6 +86,7 @@ const applyAsDoctor = async (
       ...payload.user,
       password: hashedPassword,
       role: Role.DOCTOR,
+
       needPasswordChange: true,
       doctor: {
         create: {
