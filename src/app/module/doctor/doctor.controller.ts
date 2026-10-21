@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import httpStatus from "http-status";
+import { AppError } from "../../utils/AppError";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { DoctorServices } from "./doctor.service";
@@ -8,76 +9,79 @@ import { ApplyAsDoctorValidationZodSchema } from "./doctor.validation";
 // import { ApplyAsDoctorValidationZodSchema } from "./doctor.validation";
 
 const applyAsDoctor = catchAsync(async (req: Request, res: Response) => {
-  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-  // console.log({ files });
-  const resume = files?.["resume"] ? files["resume"][0] : null;
-  const additionalFiles = files?.["additionalFiles"] || [];
+	const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+	// console.log({ files });
+	const resume = files?.["resume"] ? files["resume"][0] : null;
+	const additionalFiles = files?.["additionalFiles"] || [];
 
-  const zodValidationResult = ApplyAsDoctorValidationZodSchema.safeParse(
-    JSON.parse(req.body.data),
-  );
+	const zodValidationResult = ApplyAsDoctorValidationZodSchema.safeParse(
+		JSON.parse(req.body.data),
+	);
 
-  if (!zodValidationResult.success) {
-    throw new Error(zodValidationResult.error.issues[0].message);
-  }
+	if (!zodValidationResult.success) {
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			zodValidationResult.error.issues[0].message,
+		);
+	}
 
-  const payload = zodValidationResult.data;
+	const payload = zodValidationResult.data;
 
-  console.log({ resume, additionalFiles, payload });
+	console.log({ resume, additionalFiles, payload });
 
-  const result = await DoctorServices.applyAsDoctor(
-    payload,
-    resume,
-    additionalFiles,
-  );
+	const result = await DoctorServices.applyAsDoctor(
+		payload,
+		resume,
+		additionalFiles,
+	);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Applied As Doctor Successfuly",
-    data: result,
-  });
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Applied As Doctor Successfuly",
+		data: result,
+	});
 });
 
 const verifyDoctorEmail = catchAsync(async (req: Request, res: Response) => {
-  const payload = req.body;
+	const payload = req.body;
 
-  const result = await DoctorServices.verifyDoctorEmail(payload);
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Doctor Email Verified Successfully",
-    data: result,
-  });
+	const result = await DoctorServices.verifyDoctorEmail(payload);
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Doctor Email Verified Successfully",
+		data: result,
+	});
 });
 
 const approveDoctor = catchAsync(async (req: Request, res: Response) => {
-  const payload = req.body;
-  const user = req.user!;
+	const payload = req.body;
+	const user = req.user!;
 
-  const result = await DoctorServices.approveDoctor(payload, user);
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Doctor Email Verified Successfully",
-    data: result,
-  });
+	const result = await DoctorServices.approveDoctor(payload, user);
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Doctor Email Verified Successfully",
+		data: result,
+	});
 });
 
 const getAllDoctors = catchAsync(async (req: Request, res: Response) => {
-  const { data, meta } = await DoctorServices.getAllDoctors(req.query);
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Doctors Retrieved Successfully",
-    data: data,
-    meta: meta,
-  });
+	const { data, meta } = await DoctorServices.getAllDoctors(req.query);
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Doctors Retrieved Successfully",
+		data: data,
+		meta: meta,
+	});
 });
 
 export const DoctorController = {
-  applyAsDoctor,
-  verifyDoctorEmail,
-  approveDoctor,
-  getAllDoctors,
+	applyAsDoctor,
+	verifyDoctorEmail,
+	approveDoctor,
+	getAllDoctors,
 };
