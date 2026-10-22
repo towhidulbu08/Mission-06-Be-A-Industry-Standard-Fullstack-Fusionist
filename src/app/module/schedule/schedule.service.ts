@@ -6,6 +6,8 @@ import {
   startOfDay,
 } from "date-fns";
 import httpStatus from "http-status";
+import { ScheduleWhereInput } from "../../../generated/prisma/models";
+import { IQuery } from "../../Interfaces";
 import { prisma } from "../../lib/prisma";
 import { RequestUser } from "../../middleware/checkAuth";
 import { AppError } from "../../utils/AppError";
@@ -102,181 +104,177 @@ const createSchedule = async (
   return schedule;
 };
 
-// const getMySchedules = async (query : IQuery, user : RequestUser) => {
+const getMySchedules = async (query: IQuery, user: RequestUser) => {
+  const limit = query.limit ? Number(query.limit) : 10;
+  const page = query.page ? Number(query.page) : 1;
+  const skip = (page - 1) * limit;
+  const sortBy = query.sortBy ? query.sortBy : "createdAt";
+  const sortOrder = query.sortOrder ? query.sortOrder : "desc";
 
-//     const limit = query.limit ? Number(query.limit) : 10;
-//     const page = query.page ? Number(query.page) : 1;
-//     const skip = (page - 1) * limit;
-//     const sortBy = query.sortBy ? query.sortBy : "createdAt";
-//     const sortOrder = query.sortOrder ? query.sortOrder : "desc"
+  const doctor = await prisma.doctor.findUnique({
+    where: { userId: user.userId },
+  });
 
-//     const doctor = await prisma.doctor.findUnique({
-//         where: { userId: user.userId },
-//     });
+  if (!doctor) {
+    throw new AppError(httpStatus.NOT_FOUND, "Doctor Profile Not Found");
+  }
 
-//     if (!doctor) {
-//         throw new AppError(httpStatus.NOT_FOUND, "Doctor Profile Not Found");
-//     }
+  const andConditions: ScheduleWhereInput[] = [
+    {
+      doctorId: doctor.id,
+    },
+    {
+      isDeleted: false,
+    },
+  ];
 
-//     // let limit = 10;
-//     // if (query.limit) {
-//     //     limit = Number(query.limit);
-//     // }
+  // let limit = 10;
+  // if (query.limit) {
+  //     limit = Number(query.limit);
+  // }
 
-//     // let page = 1;
-//     // if (query.page) {
-//     //     page = Number(query.page);
-//     // }
+  // let page = 1;
+  // if (query.page) {
+  //     page = Number(query.page);
+  // }
 
-//     // const skip = (page - 1) * limit;
+  // const skip = (page - 1) * limit;
 
-//     const andConditions: ScheduleWhereInput[] = [
-//         {
-//             doctorId : doctor.id
-//         },
-//         {
-//             isDeleted : false
-//         }
-//     ];
+  if (query.status) {
+    andConditions.push({ status: query.status });
+  }
 
-//     if (query.status) {
-//         andConditions.push({ status: query.status });
-//     }
+  const schedules = await prisma.schedule.findMany({
+    where: {
+      AND: andConditions,
+    },
 
-//     const schedules = await prisma.schedule.findMany({
-//         where : {
-//             AND : andConditions
-//         },
+    take: limit,
+    skip,
+    orderBy: {
+      // sortBy : sortOrder
+      [sortBy]: sortOrder,
+    },
+    include: {
+      appointments: {
+        include: {
+          patient: true,
+        },
+      },
+    },
+  });
 
-//         take: limit,
-//         skip,
-//         orderBy: {
-//             // sortBy : sortOrder
-//             [sortBy]: sortOrder
-//         },
-//         include : {
-//             appointments : {
-//                 include : {
-//                     patient : true
-//                 }
-//             }
-//         }
-//     })
+  const total = await prisma.schedule.count({ where: { AND: andConditions } });
 
-//     const total = await prisma.schedule.count({ where: { AND: andConditions } });
+  return {
+    data: schedules,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
 
-//     return {
-//         data: schedules,
-//         meta: {
-//             page,
-//             limit,
-//             total,
-//             totalPages: Math.ceil(total / limit),
-//         },
-//     };
+const getAllSchedules = async (query: IQuery) => {
+  const limit = query.limit ? Number(query.limit) : 10;
+  const page = query.page ? Number(query.page) : 1;
+  const skip = (page - 1) * limit;
+  const sortBy = query.sortBy ? query.sortBy : "createdAt";
+  const sortOrder = query.sortOrder ? query.sortOrder : "desc";
 
-// }
+  const andConditions: ScheduleWhereInput[] = [];
 
-// const getAllSchedules = async (query : IQuery) => {
+  if (query.doctorId) {
+    andConditions.push({ doctorId: query.doctorId });
+  }
+  if (query.email) {
+    andConditions.push({
+      doctor: {
+        email: query.email,
+      },
+    });
+  }
 
-//     const limit = query.limit ? Number(query.limit) : 10;
-//     const page = query.page ? Number(query.page) : 1;
-//     const skip = (page - 1) * limit;
-//     const sortBy = query.sortBy ? query.sortBy : "createdAt";
-//     const sortOrder = query.sortOrder ? query.sortOrder : "desc"
+  if (query.status) {
+    andConditions.push({ status: query.status });
+  }
 
-//     const andConditions: ScheduleWhereInput[] = [];
+  if (query.searchTerm) {
+    andConditions.push({
+      doctor: {
+        OR: [
+          { name: { contains: query.searchTerm, mode: "insensitive" } },
+          { email: { contains: query.searchTerm, mode: "insensitive" } },
+          {
+            specialization: { contains: query.searchTerm, mode: "insensitive" },
+          },
+        ],
+      },
+    });
+  }
 
-//     if (query.doctorId) {
-//         andConditions.push({ doctorId: query.doctorId });
-//     }
-//     if (query.email) {
-//         andConditions.push({ doctor : {
-//             email : query.email
-//         } });
-//     }
+  const schedules = await prisma.schedule.findMany({
+    where: {
+      AND: andConditions,
+    },
 
-//     if (query.status) {
-//         andConditions.push({ status: query.status });
-//     }
+    take: limit,
+    skip,
+    orderBy: {
+      // sortBy : sortOrder
+      [sortBy]: sortOrder,
+    },
+    include: {
+      appointments: {
+        include: {
+          patient: true,
+        },
+      },
+    },
+  });
 
-//     if (query.searchTerm) {
-//         andConditions.push({
-//             doctor: {
-//                 OR: [
-//                     { name: { contains: query.searchTerm, mode: "insensitive" } },
-//                     { email: { contains: query.searchTerm, mode: "insensitive" } },
-//                     {
-//                         specialization: { contains: query.searchTerm, mode: "insensitive" },
-//                     },
-//                 ],
-//             },
-//         });
-//     };
+  const total = await prisma.schedule.count({ where: { AND: andConditions } });
 
-//     const schedules = await prisma.schedule.findMany({
-//         where: {
-//             AND: andConditions
-//         },
+  return {
+    data: schedules,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
 
-//         take: limit,
-//         skip,
-//         orderBy: {
-//             // sortBy : sortOrder
-//             [sortBy]: sortOrder
-//         },
-//         include: {
-//             appointments: {
-//                 include: {
-//                     patient: true
-//                 }
-//             }
-//         }
-//     })
+const getScheduleById = async (scheduleId: string) => {
+  const schedule = await prisma.schedule.findUnique({
+    where: { id: scheduleId },
+    include: {
+      doctor: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          specialization: true,
+          userId: true,
+        },
+      },
+      appointments: {
+        include: {
+          patient: true,
+        },
+      },
+    },
+  });
 
-//     const total = await prisma.schedule.count({ where: { AND: andConditions } });
+  if (!schedule || schedule.isDeleted) {
+    throw new AppError(httpStatus.NOT_FOUND, "Schedule Not Found");
+  }
 
-//     return {
-//         data: schedules,
-//         meta: {
-//             page,
-//             limit,
-//             total,
-//             totalPages: Math.ceil(total / limit),
-//         },
-//     };
-
-// }
-
-// const getScheduleById = async (scheduleId : string) => {
-
-//     const schedule = await prisma.schedule.findUnique({
-//         where: { id: scheduleId },
-//         include: {
-//             doctor: {
-//                 select: {
-//                     id: true,
-//                     name: true,
-//                     email: true,
-//                     specialization: true,
-//                     userId: true,
-//                 },
-//             },
-//             appointments: {
-//                 include: {
-//                     patient: true
-//                 },
-//             }
-//         },
-//     });
-
-//     if(!schedule || schedule.isDeleted){
-//         throw new AppError(httpStatus.NOT_FOUND, "Schedule Not Found");
-//     }
-
-//     return schedule
-
-// }
+  return schedule;
+};
 
 // const updateSchedule = async (scheduleId : string, payload : IUpdateSchedulePayload, user : RequestUser) => {
 
@@ -523,9 +521,9 @@ const createSchedule = async (
 
 export const ScheduleServices = {
   createSchedule,
-  // getMySchedules,
-  // getAllSchedules,
-  // getScheduleById,
+  getMySchedules,
+  getAllSchedules,
+  getScheduleById,
   // updateSchedule,
   // publishSchedule,
   // deleteSchedule,
