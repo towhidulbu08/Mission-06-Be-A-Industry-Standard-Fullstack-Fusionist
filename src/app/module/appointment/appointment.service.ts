@@ -11,6 +11,7 @@ import type { AppointmentWhereInput } from "../../../generated/prisma/models";
 import config from "../../config";
 import type { IQuery } from "../../Interfaces";
 import { getBkashIdToken } from "../../lib/bkash";
+import { transporter } from "../../lib/nodeMailer";
 import { prisma } from "../../lib/prisma";
 import type { RequestUser } from "../../middleware/checkAuth";
 import { AppError } from "../../utils/AppError";
@@ -437,18 +438,18 @@ const bookAppointmentCallback = async (query: Record<string, any>) => {
 
         // const pdfBuffer = await pdfReadyPromise;
 
-        // await transporter.sendMail({
-        // 	from: config.email_sender,
-        // 	to: appointment.patient.email,
-        // 	subject: "Your Appointment Invoice - PH Healthcare System",
-        // 	text: "Thank you for booking an appointment. Please find your invoice attached.",
-        // 	attachments : [
-        // 		{
-        // 			filename: "invoice.pdf",
-        // 			content : pdfBuffer
-        // 		}
-        // 	]
-        // })
+        await transporter.sendMail({
+          from: config.email_sender,
+          to: appointment.patient.email,
+          subject: "Your Appointment Invoice - PH Healthcare System",
+          text: "Thank you for booking an appointment. Please find your invoice attached.",
+          // attachments: [
+          //   {
+          //     filename: "invoice.pdf",
+          //     content: pdfBuffer,
+          //   },
+          // ],
+        });
 
         return {
           redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=success`,
