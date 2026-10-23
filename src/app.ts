@@ -1,7 +1,7 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, {
-	NextFunction,
+	type NextFunction,
 	type Application,
 	type Request,
 	type Response,

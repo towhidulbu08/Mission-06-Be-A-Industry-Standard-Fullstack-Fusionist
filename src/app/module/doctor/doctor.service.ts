@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { UploadApiResponse } from "cloudinary";
+import type { UploadApiResponse } from "cloudinary";
 import crypto from "crypto";
 import ejs from "ejs";
 import httpStatus from "http-status";
@@ -8,16 +8,16 @@ import {
 	DoctorVerificationStatus,
 	Role,
 } from "../../../generated/prisma/browser";
-import { DoctorWhereInput } from "../../../generated/prisma/models";
+import type { DoctorWhereInput } from "../../../generated/prisma/models";
 import config from "../../config";
-import { IQuery } from "../../Interfaces";
+import type { IQuery } from "../../Interfaces";
 import { cloudinary } from "../../lib/cloudinary";
 import { transporter } from "../../lib/nodeMailer";
 import { prisma } from "../../lib/prisma";
 import { redisClient } from "../../lib/redis";
-import { RequestUser } from "../../middleware/checkAuth";
+import type { RequestUser } from "../../middleware/checkAuth";
 import { AppError } from "../../utils/AppError";
-import {
+import type {
 	IApplyAsDoctorPayload,
 	IApproveDoctorPayload,
 	IVerifyDoctorEmailPayload,
