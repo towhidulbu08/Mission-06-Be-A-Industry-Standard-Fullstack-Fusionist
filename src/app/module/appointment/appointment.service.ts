@@ -1,6 +1,6 @@
 import { addMinutes, isBefore, isSameDay, subHours } from "date-fns";
 import httpStatus from "http-status";
-// import PDFDocument from "pdfkit";
+import PDFDocument from "pdfkit";
 import {
   AppointmentStatus,
   PaymentStatus,
@@ -395,60 +395,70 @@ const bookAppointmentCallback = async (query: Record<string, any>) => {
           },
         });
 
-        // const pdfDocument = new PDFDocument({ margin : 50});
+        const pdfDocument = new PDFDocument({ margin: 50 });
 
-        // const pdfChunks : Buffer[] = []
+        const pdfChunks: Buffer[] = [];
 
-        // pdfDocument.on("data", (chunk : Buffer) => {
-        // 	pdfChunks.push(chunk)
-        // })
+        pdfDocument.on("data", (chunk: Buffer) => {
+          pdfChunks.push(chunk);
+        });
 
-        // const pdfReadyPromise = new Promise<Buffer>((resolve)=>{
-        // 	pdfDocument.on("end", () => {
-        // 		resolve(Buffer.concat(pdfChunks))
-        // 	})
-        // })
+        const pdfReadyPromise = new Promise<Buffer>((resolve) => {
+          pdfDocument.on("end", () => {
+            resolve(Buffer.concat(pdfChunks));
+          });
+        });
 
-        // pdfDocument.fontSize(20).text("PH Healthcare System", {align : "center"});
-        // pdfDocument.fontSize(14).text("Appointment Invoice", { align: "center" });
-        // pdfDocument.moveDown(2)
+        pdfDocument
+          .fontSize(20)
+          .text("PH Healthcare System", { align: "center" });
+        pdfDocument
+          .fontSize(14)
+          .text("Appointment Invoice", { align: "center" });
+        pdfDocument.moveDown(2);
 
-        // pdfDocument.fontSize(12).text(`Patient Name: ${appointment.patient?.name}`);
-        // pdfDocument.text(`Patient Email: ${appointment.patient?.email}`);
-        // pdfDocument.moveDown();
+        pdfDocument
+          .fontSize(12)
+          .text(`Patient Name: ${appointment.patient?.name}`);
+        pdfDocument.text(`Patient Email: ${appointment.patient?.email}`);
+        pdfDocument.moveDown();
 
-        // pdfDocument.text(`Doctor Name: ${appointment.doctor?.name}`);
-        // pdfDocument.text(`Specialization: ${appointment.doctor?.specialization}`);
-        // pdfDocument.moveDown();
+        pdfDocument.text(`Doctor Name: ${appointment.doctor?.name}`);
+        pdfDocument.text(
+          `Specialization: ${appointment.doctor?.specialization}`,
+        );
+        pdfDocument.moveDown();
 
-        // pdfDocument.text(
-        // 	`Appointment Date: ${appointment.schedule.startDateTime.toDateString()}`,
-        // );
-        // pdfDocument.text(`Your Joining Time: ${joiningTime.toString()}`);
-        // pdfDocument.text(`Your Serial Number: ${serialNumber}`);
-        // pdfDocument.text(`Meeting Link: ${appointment.schedule.meetingLink}`);
-        // pdfDocument.moveDown();
+        pdfDocument.text(
+          `Appointment Date: ${appointment.schedule.startDateTime.toDateString()}`,
+        );
+        pdfDocument.text(`Your Joining Time: ${joiningTime.toString()}`);
+        pdfDocument.text(`Your Serial Number: ${serialNumber}`);
+        pdfDocument.text(`Meeting Link: ${appointment.schedule.meetingLink}`);
+        pdfDocument.moveDown();
 
-        // pdfDocument.text(`Amount Paid: ${executedPaymentResult.amount} BDT`);
-        // pdfDocument.text(`Payment Method: bKash`);
-        // pdfDocument.text(`Transaction Id: ${executedPaymentResult.trxID}`);
-        // pdfDocument.text(`Paid At: ${executedPaymentResult.paymentExecuteTime}`);
+        pdfDocument.text(`Amount Paid: ${executedPaymentResult.amount} BDT`);
+        pdfDocument.text(`Payment Method: bKash`);
+        pdfDocument.text(`Transaction Id: ${executedPaymentResult.trxID}`);
+        pdfDocument.text(
+          `Paid At: ${executedPaymentResult.paymentExecuteTime}`,
+        );
 
-        // pdfDocument.end()
+        pdfDocument.end();
 
-        // const pdfBuffer = await pdfReadyPromise;
+        const pdfBuffer = await pdfReadyPromise;
 
         await transporter.sendMail({
           from: config.email_sender,
           to: appointment.patient.email,
           subject: "Your Appointment Invoice - PH Healthcare System",
           text: "Thank you for booking an appointment. Please find your invoice attached.",
-          // attachments: [
-          //   {
-          //     filename: "invoice.pdf",
-          //     content: pdfBuffer,
-          //   },
-          // ],
+          attachments: [
+            {
+              filename: "invoice.pdf",
+              content: pdfBuffer,
+            },
+          ],
         });
 
         return {
@@ -465,7 +475,7 @@ const bookAppointmentCallback = async (query: Record<string, any>) => {
           },
         });
         return {
-          redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=failue`,
+          redirectUrl: `${config.frontend_url}/dashboard/my-appointments?status=failure`,
         };
       } else if (status === "cancel") {
         await tx.payment.update({
