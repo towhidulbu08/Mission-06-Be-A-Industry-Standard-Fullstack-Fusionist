@@ -704,7 +704,7 @@ const updateAppointmentStatus = async (
     if (payload.status !== "COMPLETED") {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        "Ongoinf Appointment Must Be Complted.",
+        "Ongoing Appointment Must Be Completed.",
       );
     }
 
