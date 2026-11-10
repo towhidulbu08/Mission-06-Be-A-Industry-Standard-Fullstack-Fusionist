@@ -9,21 +9,20 @@ export const getBkashIdToken = async () => {
 		const RefreshTokenKey = "bkash:refreshToken";
 
 		let bkashIdToken = await redisClient.get(IdTokenKey);
-		const bkashIdTokenTTL = await redisClient.ttl(IdTokenKey);
-
 		const bkashRefreshToken = await redisClient.get(RefreshTokenKey);
+		const bkashIdTokenTTL = await redisClient.ttl(IdTokenKey);
 		const bkashRefreshTokenTTL = await redisClient.ttl(RefreshTokenKey);
 
 		// console.log({
-		//     bkashIdToken,
-		//     bkashIdTokenTTL,
-		//     bkashRefreshToken,
-		//     bkashRefreshTokenTTL
+		//   bkashIdToken,
+		//   bkashIdTokenTTL,
+		//   bkashRefreshToken,
+		//   bkashRefreshTokenTTL,
 		// });
 
-		//bkash id token remaining time is less than equal 10 minutes or bkash id is expired
-		// bkash refresh token must exist
-		// bkash refresh token remaining time is more than 10 minutes
+		//bkash id token expiration remaining time is less than equal  10 miniutes or bkash id token is expired
+		//bkash refresh token must exist
+		// bkash refresh token expiration remaining time is more than 10 minutes
 		if (
 			(bkashIdTokenTTL <= 600 || !bkashIdToken) &&
 			bkashRefreshToken &&
@@ -47,20 +46,21 @@ export const getBkashIdToken = async () => {
 				},
 			);
 			if (!refreshTokenResponse.ok) {
-				throw new AppError(httpStatus.BAD_GATEWAY, "Bkash Access Token Grant Failed");
+				throw new AppError(
+					httpStatus.BAD_GATEWAY,
+					"Bkash Refresh Token Failed",
+				);
 			}
 
 			const bkashRefreshTokenResult = await refreshTokenResponse.json();
 
 			bkashIdToken = bkashRefreshTokenResult.id_token as string;
-
 			await redisClient.set(IdTokenKey, bkashIdToken, {
 				expiration: {
 					type: "EX",
 					value: 60 * 60,
 				},
 			});
-
 			return bkashIdToken;
 		}
 
@@ -85,35 +85,29 @@ export const getBkashIdToken = async () => {
 			},
 		);
 
-		if (!response.ok) {
-			throw new AppError(httpStatus.BAD_GATEWAY, "Bkash Access Token Grant Failed");
-		}
-
 		const result = await response.json();
 
-		//bkash id token set
+		if (!response.ok) {
+			throw new AppError(httpStatus.BAD_GATEWAY, "Bkash Access Token Failed");
+		}
 		await redisClient.set(IdTokenKey, result.id_token, {
 			expiration: {
 				type: "EX",
-				value: 60 * 60, // 1hour
+				value: 60 * 60, // 1 hour
 			},
 		});
-
-		//bkash refresh token set
 		await redisClient.set(RefreshTokenKey, result.refresh_token, {
 			expiration: {
 				type: "EX",
-				value: 60 * 60 * 24 * 28, // 28 days
+				value: 60 * 60 * 24 * 28, //28 days
 			},
 		});
-
 		bkashIdToken = result.id_token;
-
 		return bkashIdToken;
 	} catch (error: any) {
 		if (error instanceof AppError) {
 			throw error;
 		}
-		throw new AppError(httpStatus.BAD_GATEWAY, error.message);
+		throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
 	}
 };

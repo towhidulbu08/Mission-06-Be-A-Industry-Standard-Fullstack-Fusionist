@@ -14,11 +14,15 @@ export interface RequestUser {
 	userId: string;
 	role: Role;
 }
-
 declare global {
 	namespace Express {
 		interface Request {
-			user?: RequestUser;
+			user?: {
+				email: string;
+				name: string;
+				userId: string;
+				role: Role;
+			};
 		}
 	}
 }
@@ -65,7 +69,10 @@ export const auth = (...requiredRoles: Role[]) => {
 		});
 
 		if (!user) {
-			throw new AppError(httpStatus.UNAUTHORIZED, "User not found. Please log in again.");
+			throw new AppError(
+				httpStatus.UNAUTHORIZED,
+				"User not found. Please log in again.",
+			);
 		}
 
 		if (user.status === "BLOCKED") {

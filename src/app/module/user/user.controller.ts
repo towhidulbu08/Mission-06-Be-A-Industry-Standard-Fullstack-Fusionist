@@ -6,24 +6,23 @@ import { sendResponse } from "../../utils/sendResponse";
 import { UserServices } from "./user.service";
 
 const uploadProfileImage = catchAsync(async (req: Request, res: Response) => {
+	console.log("req.file", req.file);
+
 	if (!req.file) {
-		throw new AppError(httpStatus.BAD_REQUEST, "No File Provided.");
+		throw new AppError(httpStatus.BAD_REQUEST, "No File Found");
 	}
-
-	const userId = req.user?.userId;
-
+	const userId = req.user?.userId as string;
 	const result = await UserServices.uploadProfileImage(
 		req.file?.buffer,
-		userId!,
+		userId,
 	);
 	sendResponse(res, {
-		statusCode: httpStatus.OK,
+		statusCode: httpStatus.CREATED,
 		success: true,
-		message: "New tokens generated successfully",
+		message: "Image Upload Successfully",
 		data: result,
 	});
 });
-
 export const UserController = {
 	uploadProfileImage,
 };

@@ -17,7 +17,7 @@ enum Gender {
   OTHER
 }
 
-enum AuthProvider {
+enum AUTHPROVIDER {
   GOOGLE
   CREDENTIAL
 }
@@ -48,4 +48,3 @@ enum ScheduleStatus {
   DRAFT
   PUBLISHED
 }
-
