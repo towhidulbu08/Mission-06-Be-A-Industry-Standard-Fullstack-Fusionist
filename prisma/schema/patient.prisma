@@ -9,12 +9,12 @@ model Patient {
   deletedAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  appoinments   Appointment[]
+  
   //relations
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   
-  appointments Apppointment[]
+  appointments Appointment[]
   
   @@index([email], name: "idx_patient_email")
   @@index([isDeleted], name: "idx_patient_isDeleted")
